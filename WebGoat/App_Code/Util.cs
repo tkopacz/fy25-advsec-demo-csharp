@@ -13,6 +13,11 @@ namespace OWASP.WebGoat.NET.App_Code
         
         public static int RunProcessWithInput(string cmd, string args, string input)
         {
+            if (!IsValidArgument(args))
+            {
+                throw new ArgumentException("Invalid arguments provided.");
+            }
+
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
                 WorkingDirectory = Settings.RootDir,
@@ -88,6 +93,13 @@ namespace OWASP.WebGoat.NET.App_Code
                     return 1;
                 }
             }
+        }
+
+        private static bool IsValidArgument(string args)
+        {
+            // Implement validation logic here. For example, allow only certain commands or arguments.
+            // This is a simple example that only allows alphanumeric arguments.
+            return System.Text.RegularExpressions.Regex.IsMatch(args, @"^[a-zA-Z0-9\s\-\/]+$");
         }
     }
 }
