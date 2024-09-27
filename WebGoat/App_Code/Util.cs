@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Diagnostics;
 using log4net;
 using System.Reflection;
@@ -98,8 +99,9 @@ namespace OWASP.WebGoat.NET.App_Code
         private static bool IsValidArgument(string args)
         {
             // Implement validation logic here. For example, allow only certain commands or arguments.
-            // This is a simple example that only allows alphanumeric arguments.
-            return System.Text.RegularExpressions.Regex.IsMatch(args, @"^[a-zA-Z0-9\s\-\/]+$");
+            // This is a simple example that only allows specific safe arguments.
+            string[] allowedArgs = { "safeArg1", "safeArg2", "safeArg3" }; // Add all allowed arguments here
+            return allowedArgs.Contains(args);
         }
     }
 }
