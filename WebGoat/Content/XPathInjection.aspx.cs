@@ -6,7 +6,7 @@ using System.Web.UI;
 using System.Web.UI.WebControls;
 using System.Xml;
 using System.Xml.XPath;
-
+using System.Xml.Xsl;
 namespace OWASP.WebGoat.NET
 {
     public partial class XPathInjection : System.Web.UI.Page
@@ -25,13 +25,58 @@ namespace OWASP.WebGoat.NET
         {
             XmlDocument xDoc = new XmlDocument();
             xDoc.LoadXml(xml);
-            XmlNodeList list = xDoc.SelectNodes("//salesperson[state='" + state + "']");
-            if (list.Count > 0)
-            {
 
+            // Create an XPathNavigator for querying with variables
+            XPathNavigator nav = xDoc.CreateNavigator();
+            string xpath = "//salesperson[state=$state]";
+            XPathExpression expr = nav.Compile(xpath);
+
+            // Prepare argument list with the user-supplied value
+            XsltArgumentList varList = new XsltArgumentList();
+            varList.AddParam("state", string.Empty, state);
+
+            // Set the expression context using our custom context for variable resolution
+            expr.SetContext(new VariableContext(varList));
+
+            XPathNodeIterator iterator = nav.Select(expr);
+            // Collect nodes in a list for compatibility with previous logic
+            List<XPathNavigator> nodes = new List<XPathNavigator>();
+            while (iterator.MoveNext())
+            {
+                nodes.Add(iterator.Current.Clone());
             }
 
+            if (nodes.Count > 0)
+            {
+                // (processing logic can be added here)
+            }
         }
     }
-}
 
+    // Custom XsltContext for variable resolution
+    public class VariableContext : XsltContext
+    {
+        private XsltArgumentList _args;
+        public VariableContext(XsltArgumentList args) : base() { _args = args; }
+        public override IXsltContextVariable ResolveVariable(string prefix, string name)
+        {
+            object value = _args.GetParam(name, string.Empty) ?? string.Empty;
+            return new XsltContextVariableImpl(value);
+        }
+        // Unused in this context
+        public override bool Whitespace => false;
+        public override int CompareDocument(string baseUri, string nextbaseUri) => 0;
+        public override bool PreserveWhitespace(XPathNavigator node) => false;
+        public override IXsltContextFunction ResolveFunction(string prefix, string name, XPathResultType[] ArgTypes) => null;
+    }
+    // Helper for returning variable values
+    public class XsltContextVariableImpl : IXsltContextVariable
+    {
+        private object _value;
+        public XsltContextVariableImpl(object value) { _value = value; }
+        public bool IsLocal => false;
+        public bool IsParam => true;
+        public XPathResultType VariableType => XPathResultType.Any;
+        public object Evaluate(XsltContext xsltContext) => _value;
+    }
+}
